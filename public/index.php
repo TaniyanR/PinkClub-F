@@ -1,65 +1,33 @@
 <?php
-require_once __DIR__ . '/../lib/repository.php';
+declare(strict_types=1);
 
-$new3 = fetch_items('date_published DESC', 3);
-$new10 = fetch_items('date_published DESC', 10);
-$pickup10 = fetch_items('RAND()', 10);
+return [
+    'site' => [
+        'title' => 'PinkClub-F',
+        // 例: 'https://example.com'（末尾スラッシュなし）
+        'base_url' => '',
+    ],
 
-$genresSets = [];
-for ($i = 0; $i < 3; $i++) {
-    $genresSets[] = [
-        'title' => 'ジャンルレール ' . chr(65 + $i),
-        'items' => fetch_genres(10, 'RAND()'),
-    ];
-}
+    'db' => [
+        // DSN方式（PDOでそのまま使える）
+        'dsn' => 'mysql:host=127.0.0.1;dbname=pinkclub_f;charset=utf8mb4',
+        'user' => 'root',
+        'password' => '',
+        'options' => [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ],
+    ],
 
-$seriesSets = [];
-for ($i = 0; $i < 3; $i++) {
-    $seriesSets[] = [
-        'title' => 'シリーズレール ' . chr(65 + $i),
-        'items' => fetch_series(10, 'RAND()'),
-    ];
-}
-
-$makerSets = [];
-for ($i = 0; $i < 3; $i++) {
-    $makerSets[] = [
-        'title' => 'メーカーレール ' . chr(65 + $i),
-        'items' => fetch_makers(10, 'RAND()'),
-    ];
-}
-
-include __DIR__ . '/partials/header.php';
-?>
-<main>
-    <?php include __DIR__ . '/partials/block_new3.php'; ?>
-
-    <?php
-    $railTitle = '新着レール';
-    $railItems = $new10;
-    include __DIR__ . '/partials/block_rail.php';
-    ?>
-
-    <?php
-    $railTitle = 'ピックアップレール';
-    $railItems = $pickup10;
-    include __DIR__ . '/partials/block_rail.php';
-    ?>
-
-    <?php
-    $taxonomySets = $genresSets;
-    include __DIR__ . '/partials/block_taxonomy_rails.php';
-    ?>
-
-    <?php
-    $taxonomySets = $seriesSets;
-    include __DIR__ . '/partials/block_taxonomy_rails.php';
-    ?>
-
-    <?php
-    $taxonomySets = $makerSets;
-    include __DIR__ . '/partials/block_taxonomy_rails.php';
-    ?>
-</main>
-<?php include __DIR__ . '/partials/sidebar.php'; ?>
-<?php include __DIR__ . '/partials/footer.php'; ?>
+    // DMM/FANZA API（settings.phpで上書きしてもOKな前提）
+    'dmm_api' => [
+        'api_id' => '',
+        'affiliate_id' => '',
+        'site' => 'FANZA',
+        'service' => 'digital',
+        'floor' => 'videoa',
+        'hits' => 20,
+        'sort' => 'date',
+        'output' => 'json',
+    ],
+];
