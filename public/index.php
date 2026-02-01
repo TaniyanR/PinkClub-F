@@ -10,6 +10,12 @@ $pickup10 = fetch_items('RAND()', 10);
 include __DIR__ . '/partials/header.php';
 ?>
 <main>
+    <p>
+        <a href="/actresses.php">女優一覧</a> |
+        <a href="/genres.php">ジャンル一覧</a> |
+        <a href="/makers.php">メーカー一覧</a> |
+        <a href="/series.php">シリーズ一覧</a>
+    </p>
 
     <?php
     $items = $new3;

@@ -1,10 +1,18 @@
 <?php
 require_once __DIR__ . '/db.php';
 
-function fetch_items(string $orderBy = 'date_published DESC', int $limit = 10): array
+function fetch_items(string $orderBy = 'date_published DESC', int $limit = 10, int $offset = 0): array
 {
-    $stmt = db()->prepare("SELECT * FROM items ORDER BY {$orderBy} LIMIT :limit");
+    $orderBy = normalize_order($orderBy, [
+        'date_published DESC',
+        'date_published ASC',
+        'price_min DESC',
+        'price_min ASC',
+        'RAND()',
+    ], 'date_published DESC');
+    $stmt = db()->prepare("SELECT * FROM items ORDER BY {$orderBy} LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $items = $stmt->fetchAll();
     return $items ?: [];
@@ -18,9 +26,15 @@ function fetch_item_by_content_id(string $contentId): ?array
     return $item ?: null;
 }
 
-function fetch_actresses(int $limit = 50, int $offset = 0): array
+function fetch_item_by_cid(string $cid): ?array
 {
-    $stmt = db()->prepare('SELECT * FROM actresses ORDER BY name ASC LIMIT :limit OFFSET :offset');
+    return fetch_item_by_content_id($cid);
+}
+
+function fetch_actresses(int $limit = 50, int $offset = 0, string $order = 'name'): array
+{
+    $orderBy = normalize_order_column($order, ['name', 'created_at', 'updated_at'], 'name');
+    $stmt = db()->prepare("SELECT * FROM actresses ORDER BY {$orderBy} ASC LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
@@ -41,10 +55,58 @@ function fetch_actress(int $id): ?array
     return $actress ?: null;
 }
 
-function fetch_genres(int $limit = 50, string $orderBy = 'name ASC'): array
+function fetch_related_series_by_actress(int $actressId, int $limit = 50): array
 {
-    $stmt = db()->prepare("SELECT * FROM genres ORDER BY {$orderBy} LIMIT :limit");
+    $stmt = db()->prepare(
+        'SELECT DISTINCT series.* FROM series INNER JOIN item_series ON series.id = item_series.series_id INNER JOIN item_actresses ON item_series.content_id = item_actresses.content_id WHERE item_actresses.actress_id = :id ORDER BY series.name ASC LIMIT :limit'
+    );
+    $stmt->bindValue(':id', $actressId, PDO::PARAM_INT);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll() ?: [];
+}
+
+function fetch_related_makers_by_actress(int $actressId, int $limit = 50): array
+{
+    $stmt = db()->prepare(
+        'SELECT DISTINCT makers.* FROM makers INNER JOIN item_makers ON makers.id = item_makers.maker_id INNER JOIN item_actresses ON item_makers.content_id = item_actresses.content_id WHERE item_actresses.actress_id = :id ORDER BY makers.name ASC LIMIT :limit'
+    );
+    $stmt->bindValue(':id', $actressId, PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll() ?: [];
+}
+
+function fetch_genre(int $genreId): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM genres WHERE id = :id');
+    $stmt->execute([':id' => $genreId]);
+    $genre = $stmt->fetch();
+    return $genre ?: null;
+}
+
+function fetch_maker(int $makerId): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM makers WHERE id = :id');
+    $stmt->execute([':id' => $makerId]);
+    $maker = $stmt->fetch();
+    return $maker ?: null;
+}
+
+function fetch_series_one(int $seriesId): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM series WHERE id = :id');
+    $stmt->execute([':id' => $seriesId]);
+    $series = $stmt->fetch();
+    return $series ?: null;
+}
+
+function fetch_genres(int $limit = 50, int $offset = 0, string $order = 'name'): array
+{
+    $orderBy = normalize_order_column($order, ['name', 'created_at', 'updated_at'], 'name');
+    $stmt = db()->prepare("SELECT * FROM genres ORDER BY {$orderBy} ASC LIMIT :limit OFFSET :offset");
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $data = $stmt->fetchAll();
 
@@ -55,10 +117,12 @@ function fetch_genres(int $limit = 50, string $orderBy = 'name ASC'): array
     return $data;
 }
 
-function fetch_makers(int $limit = 50, string $orderBy = 'name ASC'): array
+function fetch_makers(int $limit = 50, int $offset = 0, string $order = 'name'): array
 {
-    $stmt = db()->prepare("SELECT * FROM makers ORDER BY {$orderBy} LIMIT :limit");
+    $orderBy = normalize_order_column($order, ['name', 'created_at', 'updated_at'], 'name');
+    $stmt = db()->prepare("SELECT * FROM makers ORDER BY {$orderBy} ASC LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $data = $stmt->fetchAll();
 
@@ -69,10 +133,12 @@ function fetch_makers(int $limit = 50, string $orderBy = 'name ASC'): array
     return $data;
 }
 
-function fetch_series(int $limit = 50, string $orderBy = 'name ASC'): array
+function fetch_series(int $limit = 50, int $offset = 0, string $order = 'name'): array
 {
-    $stmt = db()->prepare("SELECT * FROM series ORDER BY {$orderBy} LIMIT :limit");
+    $orderBy = normalize_order_column($order, ['name', 'created_at', 'updated_at'], 'name');
+    $stmt = db()->prepare("SELECT * FROM series ORDER BY {$orderBy} ASC LIMIT :limit OFFSET :offset");
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $data = $stmt->fetchAll();
 
@@ -83,10 +149,10 @@ function fetch_series(int $limit = 50, string $orderBy = 'name ASC'): array
     return $data;
 }
 
-function fetch_items_by_actress(int $actressId, int $limit, int $offset): array
+function fetch_items_by_actress(int $actressId, int $limit, int $offset = 0): array
 {
     $stmt = db()->prepare(
-        'SELECT items.* FROM items INNER JOIN item_actresses ON items.id = item_actresses.item_id WHERE item_actresses.actress_id = :id ORDER BY date_published DESC LIMIT :limit OFFSET :offset'
+        'SELECT items.* FROM items INNER JOIN item_actresses ON items.content_id = item_actresses.content_id WHERE item_actresses.actress_id = :id ORDER BY date_published DESC LIMIT :limit OFFSET :offset'
     );
     $stmt->bindValue(':id', $actressId, PDO::PARAM_INT);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -97,10 +163,10 @@ function fetch_items_by_actress(int $actressId, int $limit, int $offset): array
     return $items ?: [];
 }
 
-function fetch_items_by_genre(int $genreId, int $limit, int $offset): array
+function fetch_items_by_genre(int $genreId, int $limit, int $offset = 0): array
 {
     $stmt = db()->prepare(
-        'SELECT items.* FROM items INNER JOIN item_genres ON items.id = item_genres.item_id WHERE item_genres.genre_id = :id ORDER BY date_published DESC LIMIT :limit OFFSET :offset'
+        'SELECT items.* FROM items INNER JOIN item_genres ON items.content_id = item_genres.content_id WHERE item_genres.genre_id = :id ORDER BY date_published DESC LIMIT :limit OFFSET :offset'
     );
     $stmt->bindValue(':id', $genreId, PDO::PARAM_INT);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -111,10 +177,10 @@ function fetch_items_by_genre(int $genreId, int $limit, int $offset): array
     return $items ?: [];
 }
 
-function fetch_items_by_maker(int $makerId, int $limit, int $offset): array
+function fetch_items_by_maker(int $makerId, int $limit, int $offset = 0): array
 {
     $stmt = db()->prepare(
-        'SELECT items.* FROM items INNER JOIN item_makers ON items.id = item_makers.item_id WHERE item_makers.maker_id = :id ORDER BY date_published DESC LIMIT :limit OFFSET :offset'
+        'SELECT items.* FROM items INNER JOIN item_makers ON items.content_id = item_makers.content_id WHERE item_makers.maker_id = :id ORDER BY date_published DESC LIMIT :limit OFFSET :offset'
     );
     $stmt->bindValue(':id', $makerId, PDO::PARAM_INT);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -125,10 +191,10 @@ function fetch_items_by_maker(int $makerId, int $limit, int $offset): array
     return $items ?: [];
 }
 
-function fetch_items_by_series(int $seriesId, int $limit, int $offset): array
+function fetch_items_by_series(int $seriesId, int $limit, int $offset = 0): array
 {
     $stmt = db()->prepare(
-        'SELECT items.* FROM items INNER JOIN item_series ON items.id = item_series.item_id WHERE item_series.series_id = :id ORDER BY date_published DESC LIMIT :limit OFFSET :offset'
+        'SELECT items.* FROM items INNER JOIN item_series ON items.content_id = item_series.content_id WHERE item_series.series_id = :id ORDER BY date_published DESC LIMIT :limit OFFSET :offset'
     );
     $stmt->bindValue(':id', $seriesId, PDO::PARAM_INT);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -212,7 +278,7 @@ function upsert_actress(array $actress): string
     $exists = $stmt->fetchColumn();
 
     if ($exists) {
-        $sql = 'UPDATE actresses SET name = :name, ruby = :ruby, bust = :bust, cup = :cup, waist = :waist, hip = :hip, height = :height, birthday = :birthday, image_small = :image_small, image_large = :image_large, listurl_digital = :listurl_digital, listurl_monthly = :listurl_monthly, listurl_mono = :listurl_mono, updated_at = :updated_at WHERE id = :id';
+        $sql = 'UPDATE actresses SET name = :name, ruby = :ruby, bust = :bust, cup = :cup, waist = :waist, hip = :hip, height = :height, birthday = :birthday, blood_type = :blood_type, hobby = :hobby, prefectures = :prefectures, image_small = :image_small, image_large = :image_large, listurl_digital = :listurl_digital, listurl_monthly = :listurl_monthly, listurl_mono = :listurl_mono, updated_at = :updated_at WHERE id = :id';
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':id' => $actress['id'],
@@ -224,6 +290,9 @@ function upsert_actress(array $actress): string
             ':hip' => $actress['hip'],
             ':height' => $actress['height'],
             ':birthday' => $actress['birthday'],
+            ':blood_type' => $actress['blood_type'],
+            ':hobby' => $actress['hobby'],
+            ':prefectures' => $actress['prefectures'],
             ':image_small' => $actress['image_small'],
             ':image_large' => $actress['image_large'],
             ':listurl_digital' => $actress['listurl_digital'],
@@ -234,7 +303,7 @@ function upsert_actress(array $actress): string
         return 'updated';
     }
 
-    $sql = 'INSERT INTO actresses (id, name, ruby, bust, cup, waist, hip, height, birthday, image_small, image_large, listurl_digital, listurl_monthly, listurl_mono, created_at, updated_at) VALUES (:id, :name, :ruby, :bust, :cup, :waist, :hip, :height, :birthday, :image_small, :image_large, :listurl_digital, :listurl_monthly, :listurl_mono, :created_at, :updated_at)';
+    $sql = 'INSERT INTO actresses (id, name, ruby, bust, cup, waist, hip, height, birthday, blood_type, hobby, prefectures, image_small, image_large, listurl_digital, listurl_monthly, listurl_mono, created_at, updated_at) VALUES (:id, :name, :ruby, :bust, :cup, :waist, :hip, :height, :birthday, :blood_type, :hobby, :prefectures, :image_small, :image_large, :listurl_digital, :listurl_monthly, :listurl_mono, :created_at, :updated_at)';
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':id' => $actress['id'],
@@ -246,6 +315,9 @@ function upsert_actress(array $actress): string
         ':hip' => $actress['hip'],
         ':height' => $actress['height'],
         ':birthday' => $actress['birthday'],
+        ':blood_type' => $actress['blood_type'],
+        ':hobby' => $actress['hobby'],
+        ':prefectures' => $actress['prefectures'],
         ':image_small' => $actress['image_small'],
         ':image_large' => $actress['image_large'],
         ':listurl_digital' => $actress['listurl_digital'],
@@ -299,21 +371,55 @@ function upsert_taxonomy(string $table, string $idField, array $data): string
     return 'inserted';
 }
 
-function link_item_relations(int $itemId, array $relationIds, string $table, string $column): void
+function replace_item_relations(string $contentId, array $relationIds, string $table, string $column): void
 {
+    $pdo = db();
+    $delete = $pdo->prepare("DELETE FROM {$table} WHERE content_id = :content_id");
+    $delete->execute([':content_id' => $contentId]);
+
     if (!$relationIds) {
         return;
     }
 
-    $pdo = db();
-    $sql = "INSERT IGNORE INTO {$table} (item_id, {$column}) VALUES (:item_id, :rel_id)";
+    $sql = "INSERT INTO {$table} (content_id, {$column}) VALUES (:content_id, :rel_id)";
     $stmt = $pdo->prepare($sql);
     foreach ($relationIds as $id) {
         $stmt->execute([
-            ':item_id' => $itemId,
+            ':content_id' => $contentId,
             ':rel_id' => $id,
         ]);
     }
+}
+
+function replace_item_labels(string $contentId, array $labels): void
+{
+    $pdo = db();
+    $delete = $pdo->prepare('DELETE FROM item_labels WHERE content_id = :content_id');
+    $delete->execute([':content_id' => $contentId]);
+
+    if (!$labels) {
+        return;
+    }
+
+    $stmt = $pdo->prepare('INSERT INTO item_labels (content_id, label_id, label_name, label_ruby) VALUES (:content_id, :label_id, :label_name, :label_ruby)');
+    foreach ($labels as $label) {
+        $stmt->execute([
+            ':content_id' => $contentId,
+            ':label_id' => $label['id'],
+            ':label_name' => $label['name'],
+            ':label_ruby' => $label['ruby'],
+        ]);
+    }
+}
+
+function normalize_order(string $value, array $allowed, string $default): string
+{
+    return in_array($value, $allowed, true) ? $value : $default;
+}
+
+function normalize_order_column(string $value, array $allowed, string $default): string
+{
+    return in_array($value, $allowed, true) ? $value : $default;
 }
 
 function dummy_items(int $count): array
@@ -355,7 +461,7 @@ function dummy_taxonomies(int $count, string $label): array
     $items = [];
     for ($i = 1; $i <= $count; $i++) {
         $items[] = [
-            $label . '_id' => $i,
+            'id' => $i,
             'name' => 'ダミー' . $label . ' ' . $i,
             'ruby' => '',
             'list_url' => '#',

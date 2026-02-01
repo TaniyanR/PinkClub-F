@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/config.php';
+
 function db(): PDO
 {
     static $pdo = null;
@@ -6,19 +8,21 @@ function db(): PDO
         return $pdo;
     }
 
-    $config = require __DIR__ . '/../config.php';
-    $db = $config['db'];
-    $dsn = sprintf(
+    $db = config_get('db', []);
+    $dsn = $db['dsn'] ?? sprintf(
         'mysql:host=%s;dbname=%s;charset=%s',
-        $db['host'],
-        $db['name'],
-        $db['charset']
+        $db['host'] ?? '127.0.0.1',
+        $db['name'] ?? '',
+        $db['charset'] ?? 'utf8mb4'
     );
-
-    $pdo = new PDO($dsn, $db['user'], $db['pass'], [
+    $user = $db['user'] ?? '';
+    $password = $db['password'] ?? ($db['pass'] ?? '');
+    $options = $db['options'] ?? [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    ];
+
+    $pdo = new PDO($dsn, $user, $password, $options);
 
     return $pdo;
 }

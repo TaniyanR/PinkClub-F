@@ -22,15 +22,18 @@ CREATE TABLE IF NOT EXISTS items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS actresses (
-    id INT PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     ruby VARCHAR(255) DEFAULT NULL,
-    bust VARCHAR(32) DEFAULT NULL,
+    bust INT DEFAULT NULL,
     cup VARCHAR(32) DEFAULT NULL,
-    waist VARCHAR(32) DEFAULT NULL,
-    hip VARCHAR(32) DEFAULT NULL,
-    height VARCHAR(32) DEFAULT NULL,
-    birthday VARCHAR(32) DEFAULT NULL,
+    waist INT DEFAULT NULL,
+    hip INT DEFAULT NULL,
+    height INT DEFAULT NULL,
+    birthday DATE DEFAULT NULL,
+    blood_type VARCHAR(32) DEFAULT NULL,
+    hobby TEXT DEFAULT NULL,
+    prefectures VARCHAR(255) DEFAULT NULL,
     image_small TEXT,
     image_large TEXT,
     listurl_digital TEXT,
@@ -41,7 +44,7 @@ CREATE TABLE IF NOT EXISTS actresses (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS genres (
-    genre_id INT PRIMARY KEY,
+    id INT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     ruby VARCHAR(255) DEFAULT NULL,
     list_url TEXT,
@@ -54,7 +57,7 @@ CREATE TABLE IF NOT EXISTS genres (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS makers (
-    maker_id INT PRIMARY KEY,
+    id INT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     ruby VARCHAR(255) DEFAULT NULL,
     list_url TEXT,
@@ -67,7 +70,7 @@ CREATE TABLE IF NOT EXISTS makers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS series (
-    series_id INT PRIMARY KEY,
+    id INT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     ruby VARCHAR(255) DEFAULT NULL,
     list_url TEXT,
@@ -80,39 +83,39 @@ CREATE TABLE IF NOT EXISTS series (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS item_actresses (
-    item_id INT NOT NULL,
-    actress_id INT NOT NULL,
-    PRIMARY KEY (item_id, actress_id),
-    INDEX idx_item_actresses_actress (actress_id),
-    CONSTRAINT fk_item_actresses_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
-    CONSTRAINT fk_item_actresses_actress FOREIGN KEY (actress_id) REFERENCES actresses(id) ON DELETE CASCADE
+    content_id VARCHAR(64) NOT NULL,
+    actress_id BIGINT NOT NULL,
+    PRIMARY KEY (content_id, actress_id),
+    INDEX idx_item_actresses_actress (actress_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS item_genres (
-    item_id INT NOT NULL,
+    content_id VARCHAR(64) NOT NULL,
     genre_id INT NOT NULL,
-    PRIMARY KEY (item_id, genre_id),
-    INDEX idx_item_genres_genre (genre_id),
-    CONSTRAINT fk_item_genres_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
-    CONSTRAINT fk_item_genres_genre FOREIGN KEY (genre_id) REFERENCES genres(genre_id) ON DELETE CASCADE
+    PRIMARY KEY (content_id, genre_id),
+    INDEX idx_item_genres_genre (genre_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS item_makers (
-    item_id INT NOT NULL,
+    content_id VARCHAR(64) NOT NULL,
     maker_id INT NOT NULL,
-    PRIMARY KEY (item_id, maker_id),
-    INDEX idx_item_makers_maker (maker_id),
-    CONSTRAINT fk_item_makers_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
-    CONSTRAINT fk_item_makers_maker FOREIGN KEY (maker_id) REFERENCES makers(maker_id) ON DELETE CASCADE
+    PRIMARY KEY (content_id, maker_id),
+    INDEX idx_item_makers_maker (maker_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS item_series (
-    item_id INT NOT NULL,
+    content_id VARCHAR(64) NOT NULL,
     series_id INT NOT NULL,
-    PRIMARY KEY (item_id, series_id),
-    INDEX idx_item_series_series (series_id),
-    CONSTRAINT fk_item_series_item FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
-    CONSTRAINT fk_item_series_series FOREIGN KEY (series_id) REFERENCES series(series_id) ON DELETE CASCADE
+    PRIMARY KEY (content_id, series_id),
+    INDEX idx_item_series_series (series_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS item_labels (
+    content_id VARCHAR(64) NOT NULL,
+    label_id INT DEFAULT NULL,
+    label_name VARCHAR(255) NOT NULL,
+    label_ruby VARCHAR(255) DEFAULT NULL,
+    PRIMARY KEY (content_id, label_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS import_state (

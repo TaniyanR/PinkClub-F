@@ -1,11 +1,12 @@
 <?php
-$config = require __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../lib/config.php';
+$config = config();
 
-$config['api']['api_id'] = trim($_POST['api_id'] ?? '');
-$config['api']['affiliate_id'] = trim($_POST['affiliate_id'] ?? '');
-$config['api']['site'] = trim($_POST['site'] ?? 'FANZA');
-$config['api']['service'] = trim($_POST['service'] ?? 'digital');
-$config['api']['floor'] = trim($_POST['floor'] ?? 'videoa');
+$config['dmm_api']['api_id'] = trim($_POST['api_id'] ?? '');
+$config['dmm_api']['affiliate_id'] = trim($_POST['affiliate_id'] ?? '');
+$config['dmm_api']['site'] = trim($_POST['site'] ?? 'FANZA');
+$config['dmm_api']['service'] = trim($_POST['service'] ?? 'digital');
+$config['dmm_api']['floor'] = trim($_POST['floor'] ?? 'videoa');
 
 $export = '<?php' . PHP_EOL . 'return ' . var_export($config, true) . ';' . PHP_EOL;
 file_put_contents(__DIR__ . '/../../config.php', $export);
