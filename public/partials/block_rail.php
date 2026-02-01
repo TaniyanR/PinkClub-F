@@ -4,7 +4,10 @@
     <div class="rail">
         <?php foreach ($railItems as $item) : ?>
             <div class="rail-item">
-                <div><?php echo htmlspecialchars($item['name'] ?? $item['title'] ?? 'アイテム', ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php if (!empty($item['image_list'])) : ?>
+                    <img src="<?php echo htmlspecialchars($item['image_list'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($item['title'] ?? 'アイテム', ENT_QUOTES, 'UTF-8'); ?>">
+                <?php endif; ?>
+                <div class="rail-title"><?php echo htmlspecialchars($item['name'] ?? $item['title'] ?? 'アイテム', ENT_QUOTES, 'UTF-8'); ?></div>
                 <?php if (!empty($item['content_id'])) : ?>
                     <a href="/item.php?cid=<?php echo urlencode($item['content_id']); ?>">詳細</a>
                 <?php elseif (!empty($item['id'])) : ?>

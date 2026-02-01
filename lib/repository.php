@@ -7,12 +7,7 @@ function fetch_items(string $orderBy = 'date_published DESC', int $limit = 10): 
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->execute();
     $items = $stmt->fetchAll();
-
-    if (!$items) {
-        return dummy_items($limit);
-    }
-
-    return $items;
+    return $items ?: [];
 }
 
 function fetch_item_by_content_id(string $contentId): ?array
@@ -99,11 +94,7 @@ function fetch_items_by_actress(int $actressId, int $limit, int $offset): array
     $stmt->execute();
     $items = $stmt->fetchAll();
 
-    if (!$items) {
-        return dummy_items($limit);
-    }
-
-    return $items;
+    return $items ?: [];
 }
 
 function fetch_items_by_genre(int $genreId, int $limit, int $offset): array
@@ -117,11 +108,7 @@ function fetch_items_by_genre(int $genreId, int $limit, int $offset): array
     $stmt->execute();
     $items = $stmt->fetchAll();
 
-    if (!$items) {
-        return dummy_items($limit);
-    }
-
-    return $items;
+    return $items ?: [];
 }
 
 function fetch_items_by_maker(int $makerId, int $limit, int $offset): array
@@ -135,11 +122,7 @@ function fetch_items_by_maker(int $makerId, int $limit, int $offset): array
     $stmt->execute();
     $items = $stmt->fetchAll();
 
-    if (!$items) {
-        return dummy_items($limit);
-    }
-
-    return $items;
+    return $items ?: [];
 }
 
 function fetch_items_by_series(int $seriesId, int $limit, int $offset): array
@@ -153,11 +136,7 @@ function fetch_items_by_series(int $seriesId, int $limit, int $offset): array
     $stmt->execute();
     $items = $stmt->fetchAll();
 
-    if (!$items) {
-        return dummy_items($limit);
-    }
-
-    return $items;
+    return $items ?: [];
 }
 
 function fetch_taxonomy_by_id(string $table, string $idField, int $id): ?array

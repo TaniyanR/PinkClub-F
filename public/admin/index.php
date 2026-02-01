@@ -6,7 +6,7 @@ include __DIR__ . '/../partials/header.php';
     <div class="admin-card">
         <ul>
             <li><a href="/admin/settings.php">API設定</a></li>
-            <li><a href="/admin/import.php">インポート実行</a></li>
+            <li><a href="/admin/import_items.php">作品インポート</a></li>
         </ul>
     </div>
 </main>
