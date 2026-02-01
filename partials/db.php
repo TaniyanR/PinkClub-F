@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../lib/config.php';
+
 function get_config(): array
 {
-    return require __DIR__ . '/../config.php';
+    return config();
 }
 
 function get_pdo(): PDO

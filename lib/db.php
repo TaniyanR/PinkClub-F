@@ -1,4 +1,8 @@
 <?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/config.php';
+
 function db(): PDO
 {
     static $pdo = null;
@@ -6,19 +10,20 @@ function db(): PDO
         return $pdo;
     }
 
-    $config = require __DIR__ . '/../config.php';
-    $db = $config['db'];
-    $dsn = sprintf(
-        'mysql:host=%s;dbname=%s;charset=%s',
-        $db['host'],
-        $db['name'],
-        $db['charset']
-    );
-
-    $pdo = new PDO($dsn, $db['user'], $db['pass'], [
+    $db = config_get('db', []);
+    $dsn = (string)($db['dsn'] ?? '');
+    $user = (string)($db['user'] ?? '');
+    $password = (string)($db['password'] ?? '');
+    $options = $db['options'] ?? [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    ];
+
+    try {
+        $pdo = new PDO($dsn, $user, $password, $options);
+    } catch (PDOException $exception) {
+        throw new RuntimeException('Database connection failed.', 0, $exception);
+    }
 
     return $pdo;
 }

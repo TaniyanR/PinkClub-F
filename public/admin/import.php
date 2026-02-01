@@ -1,39 +1,24 @@
 <?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../../lib/config.php';
 require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/dmm_api.php';
 require_once __DIR__ . '/../../lib/repository.php';
 
-$config = require __DIR__ . '/../../config.php';
-$apiConfig = $config['api'];
-
 $resultLog = [];
 $errorLog = [];
-
-function api_base_params(array $apiConfig): array
-{
-    return [
-        'api_id' => $apiConfig['api_id'],
-        'affiliate_id' => $apiConfig['affiliate_id'],
-        'site' => $apiConfig['site'],
-        'service' => $apiConfig['service'],
-        'floor' => $apiConfig['floor'],
-    ];
-}
-
-function get_value(array $data, string $key, $default = null)
-{
-    return $data[$key] ?? $default;
-}
+$defaultHits = (int)config_get('dmm_api.hits', 20);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $type = $_POST['type'] ?? '';
-    $hits = min(100, max(1, (int)($_POST['hits'] ?? 100)));
+    $hits = min(100, max(1, (int)($_POST['hits'] ?? $defaultHits)));
     $startOffset = max(1, (int)($_POST['offset'] ?? 1));
     $maxPages = max(1, (int)($_POST['pages'] ?? 1));
     $keyword = trim($_POST['keyword'] ?? '');
     $initial = trim($_POST['initial'] ?? '');
 
-    $paramsBase = api_base_params($apiConfig);
+    $paramsBase = dmm_api_base_params();
 
     $inserted = 0;
     $updated = 0;
@@ -225,7 +210,7 @@ include __DIR__ . '/../partials/header.php';
                 <option value="items">作品</option>
             </select>
             <label>Hits (最大100)</label>
-            <input type="number" name="hits" value="100">
+            <input type="number" name="hits" value="<?php echo htmlspecialchars((string)config_get('dmm_api.hits', 20), ENT_QUOTES, 'UTF-8'); ?>">
             <label>Offset (開始)</label>
             <input type="number" name="offset" value="1">
             <label>ページ数</label>

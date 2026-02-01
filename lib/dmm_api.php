@@ -1,5 +1,19 @@
 <?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php';
+
+function dmm_api_base_params(): array
+{
+    return [
+        'api_id' => (string)config_get('dmm_api.api_id', ''),
+        'affiliate_id' => (string)config_get('dmm_api.affiliate_id', ''),
+        'site' => (string)config_get('dmm_api.site', 'FANZA'),
+        'service' => (string)config_get('dmm_api.service', 'digital'),
+        'floor' => (string)config_get('dmm_api.floor', 'videoa'),
+    ];
+}
 
 function dmm_api_request(string $endpoint, array $params): array
 {

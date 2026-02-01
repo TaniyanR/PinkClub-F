@@ -1,33 +1,36 @@
 <?php
 declare(strict_types=1);
 
-return [
-    'site' => [
-        'title' => 'PinkClub-F',
-        // 例: 'https://example.com'（末尾スラッシュなし）
-        'base_url' => '',
-    ],
+require_once __DIR__ . '/../lib/config.php';
+require_once __DIR__ . '/../lib/repository.php';
 
-    'db' => [
-        // DSN方式（PDOでそのまま使える）
-        'dsn' => 'mysql:host=127.0.0.1;dbname=pinkclub_f;charset=utf8mb4',
-        'user' => 'root',
-        'password' => '',
-        'options' => [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ],
-    ],
+$latestItems = fetch_items('date_published DESC', 12);
+$featuredItems = fetch_items('date_published DESC', 6);
 
-    // DMM/FANZA API（settings.phpで上書きしてもOKな前提）
-    'dmm_api' => [
-        'api_id' => '',
-        'affiliate_id' => '',
-        'site' => 'FANZA',
-        'service' => 'digital',
-        'floor' => 'videoa',
-        'hits' => 20,
-        'sort' => 'date',
-        'output' => 'json',
-    ],
-];
+include __DIR__ . '/partials/header.php';
+?>
+<main>
+    <h1><?php echo htmlspecialchars((string)config_get('site.title', 'PinkClub-F'), ENT_QUOTES, 'UTF-8'); ?></h1>
+
+    <h2 class="section-title">新着作品</h2>
+    <div class="rail">
+        <?php foreach ($latestItems as $item) : ?>
+            <div class="rail-item">
+                <?php echo htmlspecialchars($item['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                <div><a href="/item.php?cid=<?php echo urlencode((string)($item['content_id'] ?? '')); ?>">詳細</a></div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <h2 class="section-title">おすすめ</h2>
+    <div class="rail">
+        <?php foreach ($featuredItems as $item) : ?>
+            <div class="rail-item">
+                <?php echo htmlspecialchars($item['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                <div><a href="/item.php?cid=<?php echo urlencode((string)($item['content_id'] ?? '')); ?>">詳細</a></div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</main>
+<?php include __DIR__ . '/partials/sidebar.php'; ?>
+<?php include __DIR__ . '/partials/footer.php'; ?>

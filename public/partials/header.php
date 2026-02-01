@@ -1,5 +1,6 @@
 <?php
-$config = require __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../lib/config.php';
+$config = config();
 ?>
 <!DOCTYPE html>
 <html lang="ja">
