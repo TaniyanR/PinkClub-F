@@ -1,10 +1,10 @@
 <?php
+require_once __DIR__ . '/../../lib/config.php';
 require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/dmm_api.php';
 require_once __DIR__ . '/../../lib/repository.php';
 
-$config = require __DIR__ . '/../../config.php';
-$apiConfig = $config['api'];
+$apiConfig = config_get('dmm_api', []);
 
 $resultLog = [];
 $errorLog = [];
