@@ -1,4 +1,106 @@
 <?php
 declare(strict_types=1);
 
-require __DIR__ . '/settings.php';
+require_once __DIR__ . '/../../lib/config.php';
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+/**
+ * 簡易CSRF（管理POST用）
+ * ※settings.php 側フォームに <input type="hidden" name="_token" ...> を入れる想定
+ */
+function csrf_token(): string
+{
+    if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function csrf_validate(): bool
+{
+    $sent = $_POST['_token'] ?? '';
+    return is_string($sent) && hash_equals((string)($_SESSION['csrf_token'] ?? ''), $sent);
+}
+
+function redirect(string $path): void
+{
+    header('Location: ' . $path);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo 'Method Not Allowed';
+    exit;
+}
+
+if (!csrf_validate()) {
+    redirect('/admin/settings.php?error=csrf');
+}
+
+// 入力（最低限のバリデーション）
+$apiId = trim((string)($_POST['api_id'] ?? ''));
+$affiliateId = trim((string)($_POST['affiliate_id'] ?? ''));
+$site = trim((string)($_POST['site'] ?? 'FANZA'));
+$service = trim((string)($_POST['service'] ?? 'digital'));
+$floor = trim((string)($_POST['floor'] ?? 'videoa'));
+
+$errors = [];
+if ($apiId === '') {
+    $errors[] = 'api_id が空です';
+}
+if ($affiliateId === '') {
+    $errors[] = 'affiliate_id が空です';
+}
+if ($site === '') {
+    $errors[] = 'site が空です';
+}
+if ($service === '') {
+    $errors[] = 'service が空です';
+}
+if ($floor === '') {
+    $errors[] = 'floor が空です';
+}
+
+if ($errors) {
+    redirect('/admin/settings.php?error=validation');
+}
+
+// 既存の local を読み、dmm_api だけ更新して保存（秘密情報は local に置く）
+$local = config_local();
+if (!is_array($local)) {
+    $local = [];
+}
+
+$local['dmm_api'] = array_replace(
+    is_array($local['dmm_api'] ?? null) ? $local['dmm_api'] : [],
+    [
+        'api_id' => $apiId,
+        'affiliate_id' => $affiliateId,
+        'site' => $site,
+        'service' => $service,
+        'floor' => $floor,
+    ]
+);
+
+// 念のため古いキーは消す（以後 dmm_api に統一）
+unset($local['api']);
+
+$export = "<?php\nreturn " . var_export($local, true) . ";\n";
+
+$path = __DIR__ . '/../../config.local.php';
+$tmp  = $path . '.tmp';
+
+if (file_put_contents($tmp, $export, LOCK_EX) === false) {
+    redirect('/admin/settings.php?error=write');
+}
+
+if (!@rename($tmp, $path)) {
+    @unlink($tmp);
+    redirect('/admin/settings.php?error=rename');
+}
+
+redirect('/admin/settings.php?saved=1');

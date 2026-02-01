@@ -1,6 +1,9 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/../../lib/config.php';
-$siteTitle = (string)config_get('site.title', '');
+
+$siteTitle = (string) config_get('site.title', '');
 ?>
 </div>
 <footer>

@@ -1,22 +1,50 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/../../lib/config.php';
 require_once __DIR__ . '/../../lib/db.php';
 require_once __DIR__ . '/../../lib/dmm_api.php';
 require_once __DIR__ . '/../../lib/repository.php';
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 $apiConfig = config_get('dmm_api', []);
 
 $resultLog = [];
 $errorLog  = [];
 
+/**
+ * CSRF（管理POSTのみ・簡易）
+ */
+function csrf_token(): string
+{
+    if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function csrf_validate(): bool
+{
+    $sent = $_POST['_token'] ?? '';
+    return is_string($sent) && hash_equals((string)($_SESSION['csrf_token'] ?? ''), $sent);
+}
+
+function e(string $value): string
+{
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
 function api_base_params(array $apiConfig): array
 {
     return [
-        'api_id'        => $apiConfig['api_id'] ?? '',
-        'affiliate_id'  => $apiConfig['affiliate_id'] ?? '',
-        'site'          => $apiConfig['site'] ?? '',
-        'service'       => $apiConfig['service'] ?? '',
-        'floor'         => $apiConfig['floor'] ?? '',
+        'api_id' => (string)($apiConfig['api_id'] ?? ''),
+        'affiliate_id' => (string)($apiConfig['affiliate_id'] ?? ''),
+        'site' => (string)($apiConfig['site'] ?? ''),
+        'service' => (string)($apiConfig['service'] ?? ''),
+        'floor' => (string)($apiConfig['floor'] ?? ''),
     ];
 }
 
@@ -32,71 +60,255 @@ function validate_api_config(array $apiConfig): array
     return $missing;
 }
 
+/**
+ * DMM APIの iteminfo は「単体object」or「list」になり得るので正規化
+ */
+function normalize_iteminfo_list(mixed $value): array
+{
+    if (!is_array($value)) {
+        return [];
+    }
+
+    // 連想配列なら単体として扱う
+    $keys = array_keys($value);
+    $isList = $keys === array_keys($keys);
+    if (!$isList) {
+        return [$value];
+    }
+
+    return $value;
+}
+
+function normalize_actress_payload(array $actress): array
+{
+    $listUrl = $actress['list_url'] ?? ($actress['listurl'] ?? []);
+    return [
+        'id' => (int)($actress['id'] ?? 0),
+        'name' => (string)($actress['name'] ?? ''),
+        'ruby' => $actress['ruby'] ?? null,
+        'bust' => null,
+        'cup' => null,
+        'waist' => null,
+        'hip' => null,
+        'height' => null,
+        'birthday' => null,
+        'blood_type' => null,
+        'hobby' => null,
+        'prefectures' => null,
+        'image_small' => $actress['imageURL']['small'] ?? ($actress['image_small'] ?? null),
+        'image_large' => $actress['imageURL']['large'] ?? ($actress['image_large'] ?? null),
+        'listurl_digital' => is_array($listUrl) ? ($listUrl['digital'] ?? null) : null,
+        'listurl_monthly' => is_array($listUrl) ? ($listUrl['monthly'] ?? null) : null,
+        'listurl_mono' => is_array($listUrl) ? ($listUrl['mono'] ?? null) : null,
+    ];
+}
+
+function normalize_taxonomy_payload(array $taxonomy): array
+{
+    return [
+        'id' => (int)($taxonomy['id'] ?? 0),
+        'name' => (string)($taxonomy['name'] ?? ''),
+        'ruby' => $taxonomy['ruby'] ?? null,
+        'list_url' => $taxonomy['list_url'] ?? ($taxonomy['listurl'] ?? null),
+        'site_code' => $taxonomy['site_code'] ?? null,
+        'service_code' => $taxonomy['service_code'] ?? null,
+        'floor_id' => $taxonomy['floor_id'] ?? null,
+        'floor_code' => $taxonomy['floor_code'] ?? null,
+    ];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $missing = validate_api_config($apiConfig);
-    if ($missing) {
-        $errorLog[] = 'DMM API設定が不足しています: ' . implode(', ', $missing);
+    if (!csrf_validate()) {
+        $errorLog[] = 'CSRFトークンが不正です。ページを再読み込みしてやり直してください。';
     } else {
-        $hits        = min(100, max(1, (int)($_POST['hits'] ?? 100)));
-        $startOffset = max(1, (int)($_POST['offset'] ?? 1));
-        $maxPages    = max(1, (int)($_POST['pages'] ?? 1));
-        $keyword     = trim($_POST['keyword'] ?? '');
+        $missing = validate_api_config($apiConfig);
+        if ($missing) {
+            $errorLog[] = 'DMM API設定が不足しています: ' . implode(', ', $missing);
+        } else {
+            $hits        = (int)($_POST['hits'] ?? 100);
+            $startOffset = (int)($_POST['offset'] ?? 1);
+            $maxPages    = (int)($_POST['pages'] ?? 1);
+            $keyword     = trim((string)($_POST['keyword'] ?? ''));
 
-        $paramsBase = api_base_params($apiConfig);
+            // バリデーション（最低限）
+            $hits = min(100, max(1, $hits));
+            $startOffset = max(1, $startOffset);
+            $maxPages = max(1, min(200, $maxPages)); // 暴走防止（必要なら後で上限変更）
 
-        $inserted = 0;
-        $updated  = 0;
+            $paramsBase = api_base_params($apiConfig);
 
-        for ($page = 0; $page < $maxPages; $page++) {
-            $offset = $startOffset + ($page * $hits);
-            $params = array_merge($paramsBase, [
-                'hits'   => $hits,
-                'offset' => $offset,
-            ]);
+            $inserted = 0;
+            $updated  = 0;
 
-            if ($keyword !== '') {
-                $params['keyword'] = $keyword;
-            }
+            for ($page = 0; $page < $maxPages; $page++) {
+                $offset = $startOffset + ($page * $hits);
 
-            $response = dmm_api_request('ItemList', $params);
-            if (!$response['ok']) {
-                $errorLog[] = sprintf('APIエラー: HTTP %d %s', $response['http_code'], $response['error']);
-                break;
-            }
-
-            $data = $response['data']['result'] ?? [];
-            if (($data['status'] ?? '') !== '200') {
-                $errorLog[] = sprintf('APIステータスエラー: %s', $data['status'] ?? 'unknown');
-                break;
-            }
-
-            $list = $data['items'] ?? [];
-            foreach ($list as $row) {
-                $price = $row['prices']['price'] ?? ($row['price'] ?? null);
-
-                $result = upsert_item([
-                    'content_id'      => $row['content_id'] ?? '',
-                    'product_id'      => $row['product_id'] ?? '',
-                    'title'           => $row['title'] ?? '',
-                    'url'             => $row['URL'] ?? '',
-                    'affiliate_url'   => $row['affiliateURL'] ?? '',
-                    'image_list'      => $row['imageURL']['list'] ?? '',
-                    'image_small'     => $row['imageURL']['small'] ?? '',
-                    'image_large'     => $row['imageURL']['large'] ?? '',
-                    'date_published'  => $row['date'] ?? null,
-                    'service_code'    => $row['service_code'] ?? '',
-                    'floor_code'      => $row['floor_code'] ?? '',
-                    'category_name'   => $row['category_name'] ?? '',
-                    'price_min'       => is_numeric($price) ? (int)$price : null,
+                $params = array_merge($paramsBase, [
+                    'hits'   => $hits,
+                    'offset' => $offset,
                 ]);
+                if ($keyword !== '') {
+                    $params['keyword'] = $keyword;
+                }
 
-                $result['status'] === 'inserted' ? $inserted++ : $updated++;
+                $response = dmm_api_request('ItemList', $params);
+                if (!($response['ok'] ?? false)) {
+                    $errorLog[] = sprintf('APIエラー: HTTP %d %s', (int)($response['http_code'] ?? 0), (string)($response['error'] ?? 'unknown'));
+                    break;
+                }
+
+                $data = $response['data']['result'] ?? [];
+                if (($data['status'] ?? '') !== '200') {
+                    $errorLog[] = sprintf('APIステータスエラー: %s', (string)($data['status'] ?? 'unknown'));
+                    break;
+                }
+
+                $list = $data['items'] ?? [];
+                if (!is_array($list)) {
+                    $list = [];
+                }
+
+                foreach ($list as $row) {
+                    if (!is_array($row)) {
+                        continue;
+                    }
+
+                    $contentId = (string)($row['content_id'] ?? '');
+                    if ($contentId === '') {
+                        continue;
+                    }
+
+                    $pdo = db();
+                    $pdo->beginTransaction();
+                    try {
+                        $price = $row['prices']['price'] ?? ($row['price'] ?? null);
+
+                        $result = upsert_item([
+                            'content_id' => $contentId,
+                            'product_id' => (string)($row['product_id'] ?? ''),
+                            'title' => (string)($row['title'] ?? ''),
+                            'url' => (string)($row['URL'] ?? ''),
+                            'affiliate_url' => (string)($row['affiliateURL'] ?? ''),
+                            'image_list' => (string)($row['imageURL']['list'] ?? ''),
+                            'image_small' => (string)($row['imageURL']['small'] ?? ''),
+                            'image_large' => (string)($row['imageURL']['large'] ?? ''),
+                            'date_published' => $row['date'] ?? null,
+                            'service_code' => (string)($row['service_code'] ?? ''),
+                            'floor_code' => (string)($row['floor_code'] ?? ''),
+                            'category_name' => (string)($row['category_name'] ?? ''),
+                            'price_min' => is_numeric($price) ? (int)$price : null,
+                        ]);
+
+                        // ---- 以下は phase2（存在すれば反映）: 無ければスキップしてもimport自体は動く ----
+                        if (
+                            function_exists('upsert_actress')
+                            && function_exists('upsert_taxonomy')
+                            && function_exists('replace_item_relations')
+                            && function_exists('replace_item_labels')
+                        ) {
+                            $itemInfo = $row['iteminfo'] ?? [];
+                            if (!is_array($itemInfo)) {
+                                $itemInfo = [];
+                            }
+
+                            $actressIds = [];
+                            foreach (normalize_iteminfo_list($itemInfo['actress'] ?? []) as $actress) {
+                                if (!is_array($actress)) {
+                                    continue;
+                                }
+                                $payload = normalize_actress_payload($actress);
+                                if (($payload['id'] ?? 0) > 0 && ($payload['name'] ?? '') !== '') {
+                                    upsert_actress($payload);
+                                    $actressIds[] = (int)$payload['id'];
+                                }
+                            }
+
+                            $genreIds = [];
+                            foreach (normalize_iteminfo_list($itemInfo['genre'] ?? []) as $genre) {
+                                if (!is_array($genre)) {
+                                    continue;
+                                }
+                                $payload = normalize_taxonomy_payload($genre);
+                                if (($payload['id'] ?? 0) > 0 && ($payload['name'] ?? '') !== '') {
+                                    upsert_taxonomy('genres', 'id', $payload);
+                                    $genreIds[] = (int)$payload['id'];
+                                }
+                            }
+
+                            $makerIds = [];
+                            foreach (normalize_iteminfo_list($itemInfo['maker'] ?? []) as $maker) {
+                                if (!is_array($maker)) {
+                                    continue;
+                                }
+                                $payload = normalize_taxonomy_payload($maker);
+                                if (($payload['id'] ?? 0) > 0 && ($payload['name'] ?? '') !== '') {
+                                    upsert_taxonomy('makers', 'id', $payload);
+                                    $makerIds[] = (int)$payload['id'];
+                                }
+                            }
+
+                            $seriesIds = [];
+                            foreach (normalize_iteminfo_list($itemInfo['series'] ?? []) as $series) {
+                                if (!is_array($series)) {
+                                    continue;
+                                }
+                                $payload = normalize_taxonomy_payload($series);
+                                if (($payload['id'] ?? 0) > 0 && ($payload['name'] ?? '') !== '') {
+                                    upsert_taxonomy('series', 'id', $payload);
+                                    $seriesIds[] = (int)$payload['id'];
+                                }
+                            }
+
+                            $labels = [];
+                            foreach (normalize_iteminfo_list($itemInfo['label'] ?? []) as $label) {
+                                if (!is_array($label)) {
+                                    continue;
+                                }
+                                $labelName = (string)($label['name'] ?? '');
+                                if ($labelName === '') {
+                                    continue;
+                                }
+                                $labels[] = [
+                                    'id' => isset($label['id']) ? (int)$label['id'] : null,
+                                    'name' => $labelName,
+                                    'ruby' => $label['ruby'] ?? null,
+                                ];
+                            }
+
+                            replace_item_relations($contentId, $actressIds, 'item_actresses', 'actress_id');
+                            replace_item_relations($contentId, $genreIds, 'item_genres', 'genre_id');
+                            replace_item_relations($contentId, $makerIds, 'item_makers', 'maker_id');
+                            replace_item_relations($contentId, $seriesIds, 'item_series', 'series_id');
+                            replace_item_labels($contentId, $labels);
+                        }
+
+                        $pdo->commit();
+
+                        if (($result['status'] ?? '') === 'inserted') {
+                            $inserted++;
+                        } else {
+                            $updated++;
+                        }
+                    } catch (Throwable $e) {
+                        if ($pdo->inTransaction()) {
+                            $pdo->rollBack();
+                        }
+                        log_message('import_items failed: ' . $contentId . ' ' . $e->getMessage());
+                        $errorLog[] = sprintf('content_id %s の処理に失敗しました。', $contentId);
+                    }
+                }
+
+                $resultLog[] = sprintf('offset %d を処理しました。', $offset);
+
+                // 返却が空なら以降も空の可能性が高いので打ち切り（無限ループ防止）
+                if (count($list) === 0) {
+                    $resultLog[] = '取得件数が0件のため終了しました。';
+                    break;
+                }
             }
 
-            $resultLog[] = sprintf('offset %d を処理しました。', $offset);
+            $resultLog[] = sprintf('追加 %d件 / 更新 %d件', $inserted, $updated);
         }
-
-        $resultLog[] = sprintf('追加 %d件 / 更新 %d件', $inserted, $updated);
     }
 }
 
@@ -104,16 +316,23 @@ include __DIR__ . '/../partials/header.php';
 ?>
 <main>
     <h1>作品インポート</h1>
+
     <div class="admin-card">
         <form method="post">
+            <input type="hidden" name="_token" value="<?php echo e(csrf_token()); ?>">
+
             <label>Hits (最大100)</label>
-            <input type="number" name="hits" value="100">
+            <input type="number" name="hits" value="100" min="1" max="100">
+
             <label>Offset (開始)</label>
-            <input type="number" name="offset" value="1">
+            <input type="number" name="offset" value="1" min="1">
+
             <label>ページ数</label>
-            <input type="number" name="pages" value="1">
+            <input type="number" name="pages" value="1" min="1" max="200">
+
             <label>キーワード (任意)</label>
             <input type="text" name="keyword" value="">
+
             <button type="submit">インポート</button>
         </form>
     </div>
@@ -123,7 +342,7 @@ include __DIR__ . '/../partials/header.php';
             <h2>結果</h2>
             <ul>
                 <?php foreach ($resultLog as $line) : ?>
-                    <li><?php echo htmlspecialchars($line, ENT_QUOTES, 'UTF-8'); ?></li>
+                    <li><?php echo e((string)$line); ?></li>
                 <?php endforeach; ?>
             </ul>
         </div>
@@ -134,7 +353,7 @@ include __DIR__ . '/../partials/header.php';
             <h2>エラー</h2>
             <ul>
                 <?php foreach ($errorLog as $line) : ?>
-                    <li><?php echo htmlspecialchars($line, ENT_QUOTES, 'UTF-8'); ?></li>
+                    <li><?php echo e((string)$line); ?></li>
                 <?php endforeach; ?>
             </ul>
         </div>

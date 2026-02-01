@@ -9,7 +9,8 @@ function config_base(): array
     }
 
     $path = __DIR__ . '/../config.php';
-    $base = require $path;
+    $base = is_file($path) ? require $path : [];
+
     if (!is_array($base)) {
         $base = [];
     }
@@ -45,9 +46,17 @@ function config(): array
         return $config;
     }
 
-    $base = config_base();
-    $local = config_local();
-    $config = array_replace_recursive($base, $local);
+    // base + local（localが上書き）
+    $config = array_replace_recursive(config_base(), config_local());
+
+    // timezone（一度だけ）
+    date_default_timezone_set('Asia/Tokyo');
+
+    // 互換吸収：古い `api` が残っていたら `dmm_api` に寄せる
+    if (isset($config['api']) && !isset($config['dmm_api']) && is_array($config['api'])) {
+        $config['dmm_api'] = $config['api'];
+    }
+    unset($config['api']);
 
     return $config;
 }

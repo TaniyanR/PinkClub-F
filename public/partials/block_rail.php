@@ -15,7 +15,7 @@
                 <?php elseif (!empty($item['genre_id'])) : ?>
                     <a href="/genre.php?id=<?php echo urlencode($item['genre_id']); ?>">詳細</a>
                 <?php elseif (!empty($item['series_id'])) : ?>
-                    <a href="/series_item.php?id=<?php echo urlencode($item['series_id']); ?>">詳細</a>
+                    <a href="/series_one.php?id=<?php echo urlencode($item['series_id']); ?>">詳細</a>
                 <?php elseif (!empty($item['maker_id'])) : ?>
                     <a href="/maker.php?id=<?php echo urlencode($item['maker_id']); ?>">詳細</a>
                 <?php endif; ?>
