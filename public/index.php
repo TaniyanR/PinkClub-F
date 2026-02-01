@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/../lib/repository.php';
 
 $new3 = fetch_items('date_published DESC', 3);
@@ -8,6 +10,7 @@ $pickup10 = fetch_items('RAND()', 10);
 include __DIR__ . '/partials/header.php';
 ?>
 <main>
+
     <?php
     $items = $new3;
     include __DIR__ . '/partials/block_new3.php';
@@ -26,5 +29,6 @@ include __DIR__ . '/partials/header.php';
     ?>
 
 </main>
+
 <?php include __DIR__ . '/partials/sidebar.php'; ?>
 <?php include __DIR__ . '/partials/footer.php'; ?>
