@@ -1,7 +1,7 @@
-# TaniyanR-PinkClub-F
-FANZA（DMM）API連携・自動記事生成対応の生PHP製アダルト向けCMS “PinkClub-F”。
+# TaniyanR-PinkClub-FANZA
+FANZA（DMM）API連携・自動記事生成対応の生PHP製アダルト向けCMS “PinkClub-FANZA”。
 
-PinkClub-F は FANZA（DMM）API から作品データを取得し、自動記事化＋内部回遊＋相互リンク＋RSS＋アクセス解析により集客を最適化する個人開発向けCMSです。  
+PinkClub-FANZA は FANZA（DMM）API から作品データを取得し、自動記事化＋内部回遊＋相互リンク＋RSS＋アクセス解析により集客を最適化する個人開発向けCMSです。  
 技術的制約により Cron を利用せず、内部タイマー方式でAPI取得を制御します。
 
 ---
