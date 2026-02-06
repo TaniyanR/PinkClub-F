@@ -60,7 +60,7 @@ function dmm_api_request(string $endpoint, array $params): array
         CURLOPT_TIMEOUT => 20,          // 応答全体
         CURLOPT_CONNECTTIMEOUT => 10,   // 接続
         CURLOPT_FAILONERROR => false,   // HTTPエラーでも本文を拾う
-        CURLOPT_USERAGENT => 'PinkClub-F/1.0 (+https://example.invalid)',
+        CURLOPT_USERAGENT => 'PinkClub-FANZA/1.0 (+https://example.invalid)',
     ]);
 
     $raw = curl_exec($ch);

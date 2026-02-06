@@ -1,6 +1,6 @@
 <?php
 
-$siteTitle = $siteTitle ?? 'PinkClub-F';
+$siteTitle = $siteTitle ?? 'PinkClub-FANZA';
 $pageTitle = $pageTitle ?? $siteTitle;
 ?><!DOCTYPE html>
 <html lang="ja">
