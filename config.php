@@ -20,7 +20,7 @@ set_exception_handler(static function (Throwable $e): void {
 
 return [
     'site' => [
-        'title' => 'PinkClub-F',
+        'title' => 'PinkClub-FANZA',
         // 例: 'https://example.com'（末尾スラッシュなし）
         'base_url' => '',
     ],

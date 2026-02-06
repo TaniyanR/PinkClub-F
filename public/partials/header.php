@@ -23,10 +23,6 @@ $siteTitle = (string) config_get('site.title', '');
         </div>
         <div class="header-ad">
             <div class="ad-box">728x90 Ad</div>
-            <form method="get" action="/index.php">
-                <input type="text" name="q" placeholder="検索" />
-                <button type="submit">検索</button>
-            </form>
         </div>
     </div>
 </header>
