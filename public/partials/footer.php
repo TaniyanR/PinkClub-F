@@ -7,12 +7,14 @@ $siteTitle = (string) config_get('site.title', 'PinkClub-FANZA');
 $year = (int) date('Y');
 ?>
 </div>
-<footer>
-    <div class="footer-inner">
-        <a class="footer-credit" href="https://affiliate.dmm.com/api/">
-            <img src="https://p.dmm.co.jp/p/affiliate/web_service/r18_135_17.gif" width="135" height="17" alt="WEB SERVICE BY FANZA" />
-        </a>
-        <div class="footer-copy">&copy; <?php echo $year; ?> <?php echo htmlspecialchars($siteTitle, ENT_QUOTES, 'UTF-8'); ?></div>
+<footer class="site-footer">
+    <div class="site-footer__inner">
+        <div class="site-footer__credit">
+            <a href="https://affiliate.dmm.com/api/">
+                <img src="https://p.dmm.co.jp/p/affiliate/web_service/r18_135_17.gif" width="135" height="17" alt="WEB SERVICE BY FANZA" />
+            </a>
+        </div>
+        <div class="site-footer__copy">&copy; <?php echo $year; ?> <?php echo htmlspecialchars($siteTitle, ENT_QUOTES, 'UTF-8'); ?></div>
     </div>
 </footer>
 <?php if (isset($pageScripts) && is_array($pageScripts)) : ?>

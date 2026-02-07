@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$pageScripts = ['/assets/js/actresses.js'];
+$pageScripts = ['/assets/js/posts.js'];
 
 include __DIR__ . '/partials/header.php';
 include __DIR__ . '/partials/nav_search.php';
@@ -12,35 +12,39 @@ include __DIR__ . '/partials/nav_search.php';
     <main class="main-content">
         <section class="block">
             <div class="section-head">
-                <h1 class="section-title">女優一覧</h1>
-                <span class="section-sub">人気女優から新着までまとめて表示</span>
+                <h1 class="section-title">記事一覧</h1>
+                <span class="section-sub">商品カードはダミー表示です</span>
             </div>
             <div class="controls">
                 <div class="controls__group">
                     <label>
-                        女優名検索
-                        <input type="search" placeholder="女優名を入力">
-                    </label>
-                    <label>
                         並び替え
                         <select>
-                            <option>人気</option>
-                            <option>新着</option>
+                            <option>人気（想定）</option>
+                            <option>新着（想定）</option>
                         </select>
                     </label>
                     <label>
                         表示件数
                         <select>
+                            <option>12</option>
                             <option selected>24</option>
                             <option>48</option>
                         </select>
                     </label>
                 </div>
+                <div class="controls__filters">
+                    <button class="pill is-active" type="button">すべて</button>
+                    <button class="pill" type="button">単体</button>
+                    <button class="pill" type="button">VR</button>
+                    <button class="pill" type="button">4K</button>
+                    <button class="pill" type="button">最新</button>
+                </div>
             </div>
         </section>
 
         <section class="block">
-            <div class="actress-grid" data-grid="actresses"></div>
+            <div class="product-grid product-grid--4" data-grid="posts"></div>
         </section>
 
         <nav class="pagination" aria-label="ページネーション">
