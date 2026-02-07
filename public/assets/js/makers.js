@@ -1,8 +1,8 @@
-const grid = document.querySelector('[data-grid="genres"]');
+const grid = document.querySelector('[data-grid="makers"]');
 if (grid) {
   const items = Array.from({ length: 24 }, (_, index) => ({
-    name: `ジャンル ${index + 1}`,
-    imageUrl: index % 4 === 0 ? null : `https://picsum.photos/seed/genre-${index}/400/240`,
+    name: `メーカー ${index + 1}`,
+    imageUrl: index % 4 === 0 ? null : `https://picsum.photos/seed/maker-${index}/400/240`,
   }));
 
   grid.innerHTML = '';

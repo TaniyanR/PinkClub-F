@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$pageScripts = ['/assets/js/actresses.js'];
+$pageScripts = ['/assets/js/labels.js'];
 
 include __DIR__ . '/partials/header.php';
 include __DIR__ . '/partials/nav_search.php';
@@ -12,20 +12,21 @@ include __DIR__ . '/partials/nav_search.php';
     <main class="main-content">
         <section class="block">
             <div class="section-head">
-                <h1 class="section-title">女優一覧</h1>
-                <span class="section-sub">人気女優から新着までまとめて表示</span>
+                <h1 class="section-title">レーベル一覧</h1>
+                <span class="section-sub">レーベルカテゴリを一覧表示</span>
             </div>
             <div class="controls">
                 <div class="controls__group">
                     <label>
-                        女優名検索
-                        <input type="search" placeholder="女優名を入力">
+                        検索
+                        <input type="search" placeholder="レーベル名で検索">
                     </label>
                     <label>
                         並び替え
                         <select>
                             <option>人気</option>
                             <option>新着</option>
+                            <option>名前</option>
                         </select>
                     </label>
                     <label>
@@ -40,7 +41,7 @@ include __DIR__ . '/partials/nav_search.php';
         </section>
 
         <section class="block">
-            <div class="actress-grid" data-grid="actresses"></div>
+            <div class="taxonomy-grid" data-grid="labels"></div>
         </section>
 
         <nav class="pagination" aria-label="ページネーション">
