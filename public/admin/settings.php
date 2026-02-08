@@ -13,31 +13,39 @@ function e(string $value): string
 }
 
 $apiConfig = config_get('dmm_api', []);
-$connectTimeout = 10;
-$timeout = 20;
-$allowedSites = ['FANZA', 'DMM'];
-$allowedServices = ['digital'];
-$allowedFloors = ['videoa'];
+
+// 選択肢（UI用）
+$siteOptions = ['FANZA', 'DMM'];
+$serviceOptions = ['digital'];
+$floorOptions = ['videoa'];
+
+// 現在値（表示用）
 $currentSite = 'FANZA';
 $currentService = 'digital';
 $currentFloor = 'videoa';
 
 if (is_array($apiConfig)) {
     $siteValue = (string)($apiConfig['site'] ?? '');
-    if (in_array($siteValue, $allowedSites, true)) {
+    if (in_array($siteValue, $siteOptions, true)) {
         $currentSite = $siteValue;
     }
 
     $serviceValue = (string)($apiConfig['service'] ?? '');
-    if (in_array($serviceValue, $allowedServices, true)) {
+    if (in_array($serviceValue, $serviceOptions, true)) {
         $currentService = $serviceValue;
     }
 
     $floorValue = (string)($apiConfig['floor'] ?? '');
-    if (in_array($floorValue, $allowedFloors, true)) {
+    if (in_array($floorValue, $floorOptions, true)) {
         $currentFloor = $floorValue;
     }
+}
 
+// タイムアウト（表示用）
+$connectTimeout = 10;
+$timeout = 20;
+
+if (is_array($apiConfig)) {
     $connectTimeoutValue = filter_var($apiConfig['connect_timeout'] ?? null, FILTER_VALIDATE_INT, [
         'options' => ['min_range' => 1, 'max_range' => 30],
     ]);
@@ -90,34 +98,34 @@ include __DIR__ . '/../partials/header.php';
         <input type="hidden" name="_token" value="<?php echo e(csrf_token()); ?>">
 
         <label>API ID</label>
-        <input type="text" name="api_id" value="<?php echo e((string)($apiConfig['api_id'] ?? '')); ?>">
+        <input type="text" name="api_id" value="<?php echo e((string)(is_array($apiConfig) ? ($apiConfig['api_id'] ?? '') : '')); ?>">
 
         <label>Affiliate ID</label>
-        <input type="text" name="affiliate_id" value="<?php echo e((string)($apiConfig['affiliate_id'] ?? '')); ?>">
+        <input type="text" name="affiliate_id" value="<?php echo e((string)(is_array($apiConfig) ? ($apiConfig['affiliate_id'] ?? '') : '')); ?>">
 
         <label>Site</label>
         <select name="site">
-            <?php foreach ($allowedSites as $siteOption) : ?>
-                <option value="<?php echo e($siteOption); ?>"<?php echo $siteOption === $currentSite ? ' selected' : ''; ?>>
-                    <?php echo e($siteOption); ?>
+            <?php foreach ($siteOptions as $option) : ?>
+                <option value="<?php echo e($option); ?>"<?php echo $option === $currentSite ? ' selected' : ''; ?>>
+                    <?php echo e($option); ?>
                 </option>
             <?php endforeach; ?>
         </select>
 
         <label>Service</label>
         <select name="service">
-            <?php foreach ($allowedServices as $serviceOption) : ?>
-                <option value="<?php echo e($serviceOption); ?>"<?php echo $serviceOption === $currentService ? ' selected' : ''; ?>>
-                    <?php echo e($serviceOption); ?>
+            <?php foreach ($serviceOptions as $option) : ?>
+                <option value="<?php echo e($option); ?>"<?php echo $option === $currentService ? ' selected' : ''; ?>>
+                    <?php echo e($option); ?>
                 </option>
             <?php endforeach; ?>
         </select>
 
         <label>Floor</label>
         <select name="floor">
-            <?php foreach ($allowedFloors as $floorOption) : ?>
-                <option value="<?php echo e($floorOption); ?>"<?php echo $floorOption === $currentFloor ? ' selected' : ''; ?>>
-                    <?php echo e($floorOption); ?>
+            <?php foreach ($floorOptions as $option) : ?>
+                <option value="<?php echo e($option); ?>"<?php echo $option === $currentFloor ? ' selected' : ''; ?>>
+                    <?php echo e($option); ?>
                 </option>
             <?php endforeach; ?>
         </select>
