@@ -13,25 +13,34 @@ function e(string $value): string
 }
 
 $apiConfig = config_get('dmm_api', []);
-$localPath = __DIR__ . '/../../config.local.php';
-$defaultConnectTimeout = 10;
-$defaultTimeout = 20;
-$connectTimeout = (int)($apiConfig['connect_timeout'] ?? $defaultConnectTimeout);
-$timeout = (int)($apiConfig['timeout'] ?? $defaultTimeout);
-if ($connectTimeout < 1 || $connectTimeout > 30) {
-    $connectTimeout = $defaultConnectTimeout;
-}
-if ($timeout < 5 || $timeout > 60) {
-    $timeout = $defaultTimeout;
+$connectTimeout = 10;
+$timeout = 20;
+
+if (is_array($apiConfig)) {
+    $connectTimeoutValue = filter_var($apiConfig['connect_timeout'] ?? null, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1, 'max_range' => 30],
+    ]);
+    if ($connectTimeoutValue !== false) {
+        $connectTimeout = $connectTimeoutValue;
+    }
+
+    $timeoutValue = filter_var($apiConfig['timeout'] ?? null, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 5, 'max_range' => 60],
+    ]);
+    if ($timeoutValue !== false) {
+        $timeout = $timeoutValue;
+    }
 }
 
+$localPath = __DIR__ . '/../../config.local.php';
+
 $errorMessages = [
-    'missing_required' => 'API ID / アフィリエイトIDが未入力です。対象ファイル: ' . $localPath,
-    'csrf_failed' => '不正なリクエストです。対象ファイル: ' . $localPath,
-    'not_writable_dir' => '設定ディレクトリに書き込めません。対象ファイル: ' . $localPath . '（ディレクトリ権限を確認してください）',
+    'missing_required'  => 'API ID / アフィリエイトIDが未入力です。対象ファイル: ' . $localPath,
+    'csrf_failed'       => '不正なリクエストです。対象ファイル: ' . $localPath,
+    'not_writable_dir'  => '設定ディレクトリに書き込めません。対象ファイル: ' . $localPath . '（ディレクトリ権限を確認してください）',
     'not_writable_file' => '設定ファイルに書き込めません。対象ファイル: ' . $localPath . '（ファイル権限を確認してください）',
-    'write_failed' => 'config.local.php に書き込めません。対象ファイル: ' . $localPath . '（権限を確認してください）',
-    'rename_failed' => '設定ファイルの更新に失敗しました。対象ファイル: ' . $localPath . '（ディスク/権限を確認してください）',
+    'write_failed'      => 'config.local.php に書き込めません。対象ファイル: ' . $localPath . '（権限を確認してください）',
+    'rename_failed'     => '設定ファイルの更新に失敗しました。対象ファイル: ' . $localPath . '（ディスク/権限を確認してください）',
 ];
 
 include __DIR__ . '/../partials/header.php';
