@@ -2,6 +2,7 @@ config.local.php
 /cache/
 /logs/
 /logs/*.log
+/cache/
 .DS_Store
 Thumbs.db
 vendor/

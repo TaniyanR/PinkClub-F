@@ -13,11 +13,37 @@ function e(string $value): string
 }
 
 $apiConfig = config_get('dmm_api', []);
-$connectTimeout = 10;
-$timeout = 20;
+
+// 選択肢（UI用）
 $siteOptions = ['FANZA', 'DMM'];
 $serviceOptions = ['digital'];
 $floorOptions = ['videoa'];
+
+// 現在値（表示用）
+$currentSite = 'FANZA';
+$currentService = 'digital';
+$currentFloor = 'videoa';
+
+if (is_array($apiConfig)) {
+    $siteValue = (string)($apiConfig['site'] ?? '');
+    if (in_array($siteValue, $siteOptions, true)) {
+        $currentSite = $siteValue;
+    }
+
+    $serviceValue = (string)($apiConfig['service'] ?? '');
+    if (in_array($serviceValue, $serviceOptions, true)) {
+        $currentService = $serviceValue;
+    }
+
+    $floorValue = (string)($apiConfig['floor'] ?? '');
+    if (in_array($floorValue, $floorOptions, true)) {
+        $currentFloor = $floorValue;
+    }
+}
+
+// タイムアウト（表示用）
+$connectTimeout = 10;
+$timeout = 20;
 
 if (is_array($apiConfig)) {
     $connectTimeoutValue = filter_var($apiConfig['connect_timeout'] ?? null, FILTER_VALIDATE_INT, [
@@ -35,19 +61,6 @@ if (is_array($apiConfig)) {
     }
 }
 
-$currentSite = is_array($apiConfig) ? (string)($apiConfig['site'] ?? 'FANZA') : 'FANZA';
-if (!in_array($currentSite, $siteOptions, true)) {
-    $currentSite = 'FANZA';
-}
-$currentService = is_array($apiConfig) ? (string)($apiConfig['service'] ?? 'digital') : 'digital';
-if (!in_array($currentService, $serviceOptions, true)) {
-    $currentService = 'digital';
-}
-$currentFloor = is_array($apiConfig) ? (string)($apiConfig['floor'] ?? 'videoa') : 'videoa';
-if (!in_array($currentFloor, $floorOptions, true)) {
-    $currentFloor = 'videoa';
-}
-
 $localPath = __DIR__ . '/../../config.local.php';
 
 $errorMessages = [
@@ -63,6 +76,7 @@ include __DIR__ . '/../partials/header.php';
 ?>
 <main>
     <h1>API設定</h1>
+    <p class="admin-form-note">APIが一時的に失敗した場合、最大60分以内のキャッシュを表示します（空になりにくい）</p>
 
     <?php if (($_GET['saved'] ?? '') === '1') : ?>
         <div class="admin-card">
@@ -83,32 +97,36 @@ include __DIR__ . '/../partials/header.php';
     <form class="admin-card" method="post" action="/admin/save_settings.php">
         <input type="hidden" name="_token" value="<?php echo e(csrf_token()); ?>">
 
-        <p class="admin-form-note">APIが一時的に失敗した場合、最大60分以内のキャッシュを表示します（サイトが空になりにくくなります）。</p>
-
         <label>API ID</label>
-        <input type="text" name="api_id" value="<?php echo e((string)($apiConfig['api_id'] ?? '')); ?>">
+        <input type="text" name="api_id" value="<?php echo e((string)(is_array($apiConfig) ? ($apiConfig['api_id'] ?? '') : '')); ?>">
 
         <label>Affiliate ID</label>
-        <input type="text" name="affiliate_id" value="<?php echo e((string)($apiConfig['affiliate_id'] ?? '')); ?>">
+        <input type="text" name="affiliate_id" value="<?php echo e((string)(is_array($apiConfig) ? ($apiConfig['affiliate_id'] ?? '') : '')); ?>">
 
         <label>Site</label>
         <select name="site">
             <?php foreach ($siteOptions as $option) : ?>
-                <option value="<?php echo e($option); ?>" <?php echo $option === $currentSite ? 'selected' : ''; ?>><?php echo e($option); ?></option>
+                <option value="<?php echo e($option); ?>"<?php echo $option === $currentSite ? ' selected' : ''; ?>>
+                    <?php echo e($option); ?>
+                </option>
             <?php endforeach; ?>
         </select>
 
         <label>Service</label>
         <select name="service">
             <?php foreach ($serviceOptions as $option) : ?>
-                <option value="<?php echo e($option); ?>" <?php echo $option === $currentService ? 'selected' : ''; ?>><?php echo e($option); ?></option>
+                <option value="<?php echo e($option); ?>"<?php echo $option === $currentService ? ' selected' : ''; ?>>
+                    <?php echo e($option); ?>
+                </option>
             <?php endforeach; ?>
         </select>
 
         <label>Floor</label>
         <select name="floor">
             <?php foreach ($floorOptions as $option) : ?>
-                <option value="<?php echo e($option); ?>" <?php echo $option === $currentFloor ? 'selected' : ''; ?>><?php echo e($option); ?></option>
+                <option value="<?php echo e($option); ?>"<?php echo $option === $currentFloor ? ' selected' : ''; ?>>
+                    <?php echo e($option); ?>
+                </option>
             <?php endforeach; ?>
         </select>
 
