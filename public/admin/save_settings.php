@@ -2,9 +2,19 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../lib/config.php';
+require_once __DIR__ . '/../../lib/admin_auth.php';
+require_once __DIR__ . '/../../lib/csrf.php';
+
+admin_basic_auth_required();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /admin/settings.php');
+    exit;
+}
+
+$token = $_POST['_token'] ?? null;
+if (!csrf_verify(is_string($token) ? $token : null)) {
+    header('Location: /admin/settings.php?error=csrf_failed');
     exit;
 }
 
@@ -15,11 +25,39 @@ $service = trim((string)($_POST['service'] ?? 'digital'));
 $floor = trim((string)($_POST['floor'] ?? 'videoa'));
 
 if ($apiId === '' || $affiliateId === '') {
-    header('Location: /admin/settings.php?error=1');
+    header('Location: /admin/settings.php?error=missing_required');
     exit;
 }
 
+$allowedSites = ['FANZA', 'DMM'];
+$allowedServices = ['digital'];
+$allowedFloors = ['videoa'];
+
+if (!in_array($site, $allowedSites, true)) {
+    $site = 'FANZA';
+}
+
+if (!in_array($service, $allowedServices, true)) {
+    $service = 'digital';
+}
+
+if (!in_array($floor, $allowedFloors, true)) {
+    $floor = 'videoa';
+}
+
 $localPath = __DIR__ . '/../../config.local.php';
+$dir = dirname($localPath);
+$tmp = $localPath . '.tmp';
+
+if (!is_dir($dir) || !is_writable($dir)) {
+    header('Location: /admin/settings.php?error=not_writable_dir');
+    exit;
+}
+
+if (is_file($localPath) && !is_writable($localPath)) {
+    header('Location: /admin/settings.php?error=not_writable_file');
+    exit;
+}
 
 $local = [];
 if (is_file($localPath)) {
@@ -41,11 +79,19 @@ $export = "<?php\n";
 $export .= "declare(strict_types=1);\n\n";
 $export .= "return " . var_export($local, true) . ";\n";
 
-$result = @file_put_contents($localPath, $export, LOCK_EX);
+$result = @file_put_contents($tmp, $export, LOCK_EX);
 if ($result === false) {
-    header('Location: /admin/settings.php?error=2');
+    header('Location: /admin/settings.php?error=write_failed');
     exit;
 }
+
+if (!@rename($tmp, $localPath)) {
+    @unlink($tmp);
+    header('Location: /admin/settings.php?error=rename_failed');
+    exit;
+}
+
+@chmod($localPath, 0640);
 
 header('Location: /admin/settings.php?saved=1');
 exit;
