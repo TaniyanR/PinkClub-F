@@ -1,13 +1,9 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../lib/config.php';
-require_once __DIR__ . '/../../lib/admin_auth.php';
-require_once __DIR__ . '/../../lib/csrf.php';
+require_once __DIR__ . '/_bootstrap.php';
 
-admin_basic_auth_required();
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     header('Location: /admin/settings.php');
     exit;
 }
@@ -36,11 +32,9 @@ $allowedFloors = ['videoa'];
 if (!in_array($site, $allowedSites, true)) {
     $site = 'FANZA';
 }
-
 if (!in_array($service, $allowedServices, true)) {
     $service = 'digital';
 }
-
 if (!in_array($floor, $allowedFloors, true)) {
     $floor = 'videoa';
 }
