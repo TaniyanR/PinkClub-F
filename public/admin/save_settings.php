@@ -19,8 +19,12 @@ $affiliateId = trim((string)($_POST['affiliate_id'] ?? ''));
 $site = trim((string)($_POST['site'] ?? 'FANZA'));
 $service = trim((string)($_POST['service'] ?? 'digital'));
 $floor = trim((string)($_POST['floor'] ?? 'videoa'));
-$connectTimeout = (int)($_POST['connect_timeout'] ?? 10);
-$timeout = (int)($_POST['timeout'] ?? 20);
+$connectTimeout = filter_var($_POST['connect_timeout'] ?? null, FILTER_VALIDATE_INT, [
+    'options' => ['min_range' => 1, 'max_range' => 30],
+]);
+$timeout = filter_var($_POST['timeout'] ?? null, FILTER_VALIDATE_INT, [
+    'options' => ['min_range' => 5, 'max_range' => 60],
+]);
 
 if ($apiId === '' || $affiliateId === '') {
     header('Location: /admin/settings.php?error=missing_required');
@@ -40,10 +44,10 @@ if (!in_array($service, $allowedServices, true)) {
 if (!in_array($floor, $allowedFloors, true)) {
     $floor = 'videoa';
 }
-if ($connectTimeout < 1 || $connectTimeout > 30) {
+if ($connectTimeout === false) {
     $connectTimeout = 10;
 }
-if ($timeout < 5 || $timeout > 60) {
+if ($timeout === false) {
     $timeout = 20;
 }
 

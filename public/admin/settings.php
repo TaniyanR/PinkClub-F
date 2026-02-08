@@ -15,8 +15,29 @@ function e(string $value): string
 $apiConfig = config_get('dmm_api', []);
 $connectTimeout = 10;
 $timeout = 20;
+$allowedSites = ['FANZA', 'DMM'];
+$allowedServices = ['digital'];
+$allowedFloors = ['videoa'];
+$currentSite = 'FANZA';
+$currentService = 'digital';
+$currentFloor = 'videoa';
 
 if (is_array($apiConfig)) {
+    $siteValue = (string)($apiConfig['site'] ?? '');
+    if (in_array($siteValue, $allowedSites, true)) {
+        $currentSite = $siteValue;
+    }
+
+    $serviceValue = (string)($apiConfig['service'] ?? '');
+    if (in_array($serviceValue, $allowedServices, true)) {
+        $currentService = $serviceValue;
+    }
+
+    $floorValue = (string)($apiConfig['floor'] ?? '');
+    if (in_array($floorValue, $allowedFloors, true)) {
+        $currentFloor = $floorValue;
+    }
+
     $connectTimeoutValue = filter_var($apiConfig['connect_timeout'] ?? null, FILTER_VALIDATE_INT, [
         'options' => ['min_range' => 1, 'max_range' => 30],
     ]);
@@ -47,6 +68,7 @@ include __DIR__ . '/../partials/header.php';
 ?>
 <main>
     <h1>API設定</h1>
+    <p class="admin-form-note">APIが一時的に失敗した場合、最大60分以内のキャッシュを表示します（空になりにくい）</p>
 
     <?php if (($_GET['saved'] ?? '') === '1') : ?>
         <div class="admin-card">
@@ -74,13 +96,31 @@ include __DIR__ . '/../partials/header.php';
         <input type="text" name="affiliate_id" value="<?php echo e((string)($apiConfig['affiliate_id'] ?? '')); ?>">
 
         <label>Site</label>
-        <input type="text" name="site" value="<?php echo e((string)($apiConfig['site'] ?? 'FANZA')); ?>">
+        <select name="site">
+            <?php foreach ($allowedSites as $siteOption) : ?>
+                <option value="<?php echo e($siteOption); ?>"<?php echo $siteOption === $currentSite ? ' selected' : ''; ?>>
+                    <?php echo e($siteOption); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
 
         <label>Service</label>
-        <input type="text" name="service" value="<?php echo e((string)($apiConfig['service'] ?? 'digital')); ?>">
+        <select name="service">
+            <?php foreach ($allowedServices as $serviceOption) : ?>
+                <option value="<?php echo e($serviceOption); ?>"<?php echo $serviceOption === $currentService ? ' selected' : ''; ?>>
+                    <?php echo e($serviceOption); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
 
         <label>Floor</label>
-        <input type="text" name="floor" value="<?php echo e((string)($apiConfig['floor'] ?? 'videoa')); ?>">
+        <select name="floor">
+            <?php foreach ($allowedFloors as $floorOption) : ?>
+                <option value="<?php echo e($floorOption); ?>"<?php echo $floorOption === $currentFloor ? ' selected' : ''; ?>>
+                    <?php echo e($floorOption); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
 
         <label>接続タイムアウト秒</label>
         <input type="number" name="connect_timeout" min="1" max="30" step="1" value="<?php echo e((string)$connectTimeout); ?>">
