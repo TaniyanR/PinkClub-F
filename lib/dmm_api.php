@@ -8,6 +8,8 @@ function dmm_api_request(string $endpoint, array $params): array
 {
     // configのdmm_apiをベースに不足があれば補う（params側が優先）
     $api = config_get('dmm_api', []);
+    $connectTimeout = 10;
+    $timeout = 20;
     if (is_array($api)) {
         $base = [
             'api_id' => (string)($api['api_id'] ?? ''),
@@ -21,6 +23,18 @@ function dmm_api_request(string $endpoint, array $params): array
                 // site/service/floor も空なら補完（空のままだとAPI側で落ちる）
                 $params[$k] = $v;
             }
+        }
+        $connectTimeoutValue = filter_var($api['connect_timeout'] ?? null, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1, 'max_range' => 30],
+        ]);
+        if ($connectTimeoutValue !== false) {
+            $connectTimeout = $connectTimeoutValue;
+        }
+        $timeoutValue = filter_var($api['timeout'] ?? null, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 5, 'max_range' => 60],
+        ]);
+        if ($timeoutValue !== false) {
+            $timeout = $timeoutValue;
         }
     }
 
@@ -57,8 +71,8 @@ function dmm_api_request(string $endpoint, array $params): array
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_TIMEOUT => 20,          // 応答全体
-        CURLOPT_CONNECTTIMEOUT => 10,   // 接続
+        CURLOPT_TIMEOUT => $timeout,          // 応答全体
+        CURLOPT_CONNECTTIMEOUT => $connectTimeout,   // 接続
         CURLOPT_FAILONERROR => false,   // HTTPエラーでも本文を拾う
         CURLOPT_USERAGENT => 'PinkClub-FANZA/1.0 (+https://example.invalid)',
     ]);
